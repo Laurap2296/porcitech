@@ -223,6 +223,7 @@ readonly>
 </div>
 
 </div>
+
 <div class="mb-3">
 
     <label>¿Repitió Celo?</label>
@@ -397,6 +398,46 @@ document.addEventListener("DOMContentLoaded",function(){
 
     tipo.addEventListener("change",cambiar);
     cambiar();
+
+
+    /*--------------------------------------------------------------
+    | CALCULAR FECHAS DE REVISIÓN Y PARTO
+    |--------------------------------------------------------------*/
+
+    let fechaServicio = document.getElementById("fecha_servicio");
+    let fechaRevision = document.getElementById("fecha_revision_celo");
+    let fechaParto = document.getElementById("fecha_probable_parto");
+
+    function calcularFechas(){
+
+        if(!fechaServicio.value){
+            fechaRevision.value = "";
+            fechaParto.value = "";
+            return;
+        }
+
+        let fecha = new Date(fechaServicio.value + "T00:00:00");
+
+        let revision = new Date(fecha);
+        revision.setDate(revision.getDate() + 21);
+
+        let parto = new Date(fecha);
+        parto.setDate(parto.getDate() + 114);
+
+        fechaRevision.value =
+            revision.getFullYear() + "-" +
+            String(revision.getMonth() + 1).padStart(2, "0") + "-" +
+            String(revision.getDate()).padStart(2, "0");
+
+        fechaParto.value =
+            parto.getFullYear() + "-" +
+            String(parto.getMonth() + 1).padStart(2, "0") + "-" +
+            String(parto.getDate()).padStart(2, "0");
+    }
+
+    fechaServicio.addEventListener("change",calcularFechas);
+
+    calcularFechas();
 
 });
 

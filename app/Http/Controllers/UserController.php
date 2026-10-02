@@ -5,12 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
     public function index()
     {
         $usuarios = User::all();
+
         return view('usuarios.index', compact('usuarios'));
     }
 
@@ -22,10 +24,10 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required',
-            'email' => 'required|email|unique:users',
-            'password' => 'required|min:6',
-            'rol' => 'required'
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'rol' => 'required|in:Administrador,Operario'
         ]);
 
         User::create([
@@ -35,37 +37,51 @@ class UserController extends Controller
             'rol' => $request->rol
         ]);
 
-        return redirect()->route('usuarios.index')
-            ->with('success', 'Usuario creado correctamente');
+        return redirect()
+            ->route('usuarios.index')
+            ->with('success', 'Usuario creado correctamente.');
     }
 
     public function edit(string $id)
     {
         $usuario = User::findOrFail($id);
+
         return view('usuarios.edit', compact('usuario'));
     }
 
     public function update(Request $request, string $id)
-{
-    $usuario = User::findOrFail($id);
+    {
+        $usuario = User::findOrFail($id);
 
-    $usuario->update([
-        'name' => $request->name,
-        'email' => $request->email,
-        'rol' => $request->rol
-    ]);
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('users', 'email')->ignore($usuario->id),
+            ],
+            'rol' => 'required|in:Administrador,Operario'
+        ]);
 
+        $usuario->update([
+            'name' => $request->name,
+            'email' => $request->email,
+            'rol' => $request->rol
+        ]);
 
-        return redirect()->route('usuarios.index')
-            ->with('success', 'Usuario actualizado correctamente');
+        return redirect()
+            ->route('usuarios.index')
+            ->with('success', 'Usuario actualizado correctamente.');
     }
 
     public function destroy(string $id)
     {
         $usuario = User::findOrFail($id);
+
         $usuario->delete();
 
-        return redirect()->route('usuarios.index')
-            ->with('success', 'Usuario eliminado correctamente');
+        return redirect()
+            ->route('usuarios.index')
+            ->with('success', 'Usuario eliminado correctamente.');
     }
 }

@@ -16,40 +16,15 @@ class SanidadController extends Controller
 
     public function index()
     {
-        /*
-        |--------------------------------------------------------------------------
-        | ANIMALES QUE TIENEN HISTORIAL SANITARIO
-        |--------------------------------------------------------------------------
-        |
-        | Antes se utilizaba:
-        |
-        | Animal::where('estado', 'Activo')
-        |
-        | Eso hacía que un animal desapareciera del historial cuando
-        | cambiaba de estado.
-        |
-        | Ahora mostramos todos los animales que tengan al menos
-        | un registro sanitario.
-        |
-        */
-
         $animales = Animal::whereHas('sanidades')
             ->orderBy('codigo')
             ->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | HISTORIAL SANITARIO
-        |--------------------------------------------------------------------------
-        */
 
         $historial = Sanidad::with('animal')
             ->orderBy('animal_id')
             ->orderByDesc('fecha')
             ->get()
             ->groupBy('animal_id');
-
 
         return view(
             'sanidad.index',
@@ -69,11 +44,6 @@ class SanidadController extends Controller
 
     public function create()
     {
-        /*
-        | Para registrar un nuevo tratamiento solamente
-        | mostramos animales activos.
-        */
-
         $animales = Animal::where('estado', 'Activo')
             ->orderBy('codigo')
             ->get();
@@ -100,27 +70,9 @@ class SanidadController extends Controller
             'fecha' => 'required'
         ]);
 
-
         $fecha = $request->fecha;
 
         $proxima = $request->proxima_fecha;
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CALCULAR PRÓXIMA FECHA
-        |--------------------------------------------------------------------------
-        */
-
-        if ($request->dias) {
-
-            $proxima = date(
-                'Y-m-d',
-                strtotime(
-                    $fecha . ' +' . $request->dias . ' days'
-                )
-            );
-        }
 
 
         /*
@@ -185,21 +137,9 @@ class SanidadController extends Controller
     {
         $sanidad = Sanidad::findOrFail($id);
 
-
-        /*
-        | Para editar mantenemos solamente los animales activos
-        | como opciones de asignación.
-        */
-
         $animales = Animal::where('estado', 'Activo')
             ->orderBy('codigo')
             ->get();
-
-
-        /*
-        | Si el animal actualmente asignado ya no está activo,
-        | lo agregamos para que no desaparezca del select.
-        */
 
         if (
             $sanidad->animal &&
@@ -234,7 +174,6 @@ class SanidadController extends Controller
     {
         $sanidad = Sanidad::findOrFail($id);
 
-
         $request->validate([
             'animal_id' => 'required',
             'tipo_registro' => 'required',
@@ -246,23 +185,6 @@ class SanidadController extends Controller
         $fecha = $request->fecha;
 
         $proxima = $request->proxima_fecha;
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CALCULAR PRÓXIMA FECHA
-        |--------------------------------------------------------------------------
-        */
-
-        if ($request->dias) {
-
-            $proxima = date(
-                'Y-m-d',
-                strtotime(
-                    $fecha . ' +' . $request->dias . ' days'
-                )
-            );
-        }
 
 
         /*

@@ -2,184 +2,359 @@
 
 @section('content')
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="container-fluid">
 
-    <h2>Animales</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Animales</h2>
 
-    <a href="{{ route('animales.create') }}"
-       class="btn btn-success">
-        Nuevo Animal
-    </a>
-
-</div>
-
-
-@if(session('success'))
-
-    <div class="alert alert-success">
-        {{ session('success') }}
+        <a href="{{ route('animales.create') }}" class="btn btn-success">
+            ➕ Nuevo Animal
+        </a>
     </div>
 
-@endif
+    @if(session('success'))
+        <div class="alert alert-success">
+            {{ session('success') }}
+        </div>
+    @endif
 
+    {{-- FILTROS --}}
+    <form method="GET" action="{{ route('animales.index') }}" class="mb-4">
 
-<div class="table-responsive">
+        <div class="row g-3">
 
-    <table class="table table-bordered table-striped align-middle">
+            <div class="col-md-2">
+                <label for="codigo" class="form-label">
+                    Código
+                </label>
 
-        <thead>
+                <input
+                    type="text"
+                    name="codigo"
+                    id="codigo"
+                    class="form-control"
+                    placeholder="Código"
+                    value="{{ request('codigo') }}"
+                >
+            </div>
 
-            <tr>
+            <div class="col-md-2">
+                <label for="sexo" class="form-label">
+                    Sexo
+                </label>
 
-                <th>Código</th>
-                <th>Raza</th>
-                <th>Sexo</th>
-                <th>Etapa</th>
-                <th>Origen</th>
-                <th>Estado</th>
-                <th>Granja</th>
-                <th class="text-center">Acciones</th>
+                <select name="sexo" id="sexo" class="form-select">
+                    <option value="">Todos</option>
 
-            </tr>
+                    <option
+                        value="Macho"
+                        {{ request('sexo') == 'Macho' ? 'selected' : '' }}
+                    >
+                        Macho
+                    </option>
 
-        </thead>
+                    <option
+                        value="Hembra"
+                        {{ request('sexo') == 'Hembra' ? 'selected' : '' }}
+                    >
+                        Hembra
+                    </option>
+                </select>
+            </div>
 
+            <div class="col-md-2">
+                <label for="etapa" class="form-label">
+                    Etapa
+                </label>
 
-        <tbody>
+                <select name="etapa" id="etapa" class="form-select">
+                    <option value="">Todas</option>
 
-        @forelse($animales as $animal)
+                    <option
+                        value="Lechon"
+                        {{ request('etapa') == 'Lechon' ? 'selected' : '' }}
+                    >
+                        Lechón
+                    </option>
 
-            <tr>
+                    <option
+                        value="Levante"
+                        {{ request('etapa') == 'Levante' ? 'selected' : '' }}
+                    >
+                        Levante
+                    </option>
 
-                <td>
-                    {{ $animal->codigo }}
-                </td>
+                    <option
+                        value="Ceba"
+                        {{ request('etapa') == 'Ceba' ? 'selected' : '' }}
+                    >
+                        Ceba
+                    </option>
 
-                <td>
-                    {{ $animal->raza }}
-                </td>
+                    <option
+                        value="Reproductor"
+                        {{ request('etapa') == 'Reproductor' ? 'selected' : '' }}
+                    >
+                        Reproductor
+                    </option>
+                </select>
+            </div>
 
-                <td>
-                    {{ $animal->sexo }}
-                </td>
+            <div class="col-md-2">
+                <label for="origen" class="form-label">
+                    Origen
+                </label>
 
-                <td>
-                    {{ $animal->etapa }}
-                </td>
+                <select name="origen" id="origen" class="form-select">
+                    <option value="">Todos</option>
 
-                <td>
-                    {{ $animal->origen }}
-                </td>
+                    <option
+                        value="Nacido"
+                        {{ request('origen') == 'Nacido' ? 'selected' : '' }}
+                    >
+                        Nacido
+                    </option>
 
-                <td>
+                    <option
+                        value="Comprado"
+                        {{ request('origen') == 'Comprado' ? 'selected' : '' }}
+                    >
+                        Comprado
+                    </option>
+                </select>
+            </div>
 
-                    @if($animal->estado === 'Activo')
+            <div class="col-md-2">
+                <label for="estado" class="form-label">
+                    Estado
+                </label>
 
-                        <span class="badge bg-success">
-                            Activo
-                        </span>
+                <select name="estado" id="estado" class="form-select">
+                    <option value="">Todos</option>
 
-                    @elseif($animal->estado === 'Vendido')
+                    <option
+                        value="Activo"
+                        {{ request('estado') == 'Activo' ? 'selected' : '' }}
+                    >
+                        Activo
+                    </option>
 
-                        <span class="badge bg-primary">
-                            Vendido
-                        </span>
+                    <option
+                        value="Vendido"
+                        {{ request('estado') == 'Vendido' ? 'selected' : '' }}
+                    >
+                        Vendido
+                    </option>
 
-                    @elseif($animal->estado === 'Muerto')
+                    <option
+                        value="Muerto"
+                        {{ request('estado') == 'Muerto' ? 'selected' : '' }}
+                    >
+                        Muerto
+                    </option>
+                </select>
+            </div>
 
-                        <span class="badge bg-danger">
-                            Muerto
-                        </span>
+            <div class="col-md-2">
+                <label for="granja_id" class="form-label">
+                    Granja
+                </label>
 
-                    @else
+                <select name="granja_id" id="granja_id" class="form-select">
+                    <option value="">Todas</option>
 
-                        <span class="badge bg-secondary">
-                            {{ $animal->estado }}
-                        </span>
+                    @foreach($granjas as $granja)
 
-                    @endif
+                        <option
+                            value="{{ $granja->id }}"
+                            {{ request('granja_id') == $granja->id ? 'selected' : '' }}
+                        >
+                            {{ $granja->nombre }}
+                        </option>
 
-                </td>
+                    @endforeach
 
-                <td>
-                    {{ $animal->granja->nombre ?? 'Sin granja' }}
-                </td>
+                </select>
+            </div>
 
+        </div>
 
-                {{-- ================================================= --}}
-                {{-- ACCIONES --}}
-                {{-- ================================================= --}}
+        <div class="mt-3">
 
-                <td class="text-center">
+            <button type="submit" class="btn btn-primary">
+                🔎 Filtrar
+            </button>
 
-                    <div class="d-flex justify-content-center gap-1">
+            <a
+                href="{{ route('animales.index') }}"
+                class="btn btn-secondary"
+            >
+                Limpiar
+            </a>
 
-                        {{-- VER HISTORIA --}}
-                        <a href="{{ route('animales.show', $animal->id) }}"
-                           class="btn btn-info btn-sm"
-                           title="Ver historia clínica y productiva"
-                           aria-label="Ver historia clínica y productiva">
+        </div>
 
-                            👁️
+    </form>
 
-                        </a>
+    {{-- TABLA --}}
+    <div class="table-responsive">
 
+        <table class="table table-bordered table-striped align-middle">
 
-                        {{-- EDITAR --}}
-                        <a href="{{ route('animales.edit', $animal->id) }}"
-                           class="btn btn-warning btn-sm"
-                           title="Editar animal"
-                           aria-label="Editar animal">
+            <thead style="background-color: #198754; color: white;">
 
-                            ✏️
+                <tr>
+                    <th>Código</th>
+                    <th>Raza</th>
+                    <th>Sexo</th>
+                    <th>Etapa</th>
+                    <th>Origen</th>
+                    <th>Estado</th>
+                    <th>Granja</th>
+                    <th>Acciones</th>
+                </tr>
 
-                        </a>
+            </thead>
 
+            <tbody>
 
-                        {{-- ELIMINAR --}}
-                        <form action="{{ route('animales.destroy', $animal->id) }}"
-                              method="POST"
-                              class="d-inline"
-                              onsubmit="return confirm('¿Está seguro de eliminar este animal?');">
+                @forelse($animales as $animal)
 
-                            @csrf
+                    <tr>
 
-                            @method('DELETE')
+                        <td>
+                            {{ $animal->codigo }}
+                        </td>
 
-                            <button type="submit"
-                                    class="btn btn-danger btn-sm"
-                                    title="Eliminar animal"
-                                    aria-label="Eliminar animal">
+                        <td>
+                            {{ $animal->raza }}
+                        </td>
 
-                                🗑️
+                        <td>
+                            {{ $animal->sexo }}
+                        </td>
 
-                            </button>
+                        <td>
+                            {{ $animal->etapa }}
+                        </td>
 
-                        </form>
+                        <td>
+                            {{ $animal->origen }}
+                        </td>
 
-                    </div>
+                        <td>
 
-                </td>
+                            @if($animal->estado === 'Activo')
 
-            </tr>
+                                <span class="badge bg-success">
+                                    Activo
+                                </span>
 
-        @empty
+                            @elseif($animal->estado === 'Vendido')
 
-            <tr>
+                                <span class="badge bg-primary">
+                                    Vendido
+                                </span>
 
-                <td colspan="8" class="text-center">
+                            @elseif($animal->estado === 'Muerto')
 
-                    No hay animales registrados
+                                <span class="badge bg-danger">
+                                    Muerto
+                                </span>
 
-                </td>
+                            @else
 
-            </tr>
+                                <span class="badge bg-secondary">
+                                    {{ $animal->estado }}
+                                </span>
 
-        @endforelse
+                            @endif
 
-        </tbody>
+                        </td>
 
-    </table>
+                        <td>
+                            {{ $animal->granja->nombre ?? 'Sin granja' }}
+                        </td>
+
+                        <td>
+
+                            <div class="d-flex gap-1">
+
+                                {{-- VER HISTORIA --}}
+                                <a
+                                    href="{{ route('animales.show', $animal) }}"
+                                    class="btn btn-sm btn-info"
+                                    title="Ver historia"
+                                >
+                                    👁️
+                                </a>
+
+                                {{-- EDITAR --}}
+                                <a
+                                    href="{{ route('animales.edit', $animal) }}"
+                                    class="btn btn-sm btn-warning"
+                                    title="Editar"
+                                >
+                                    ✏️
+                                </a>
+
+                                {{-- ELIMINAR --}}
+                                <form
+                                    action="{{ route('animales.destroy', $animal) }}"
+                                    method="POST"
+                                    onsubmit="return confirm('¿Está seguro de eliminar este animal?')"
+                                >
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                    <button
+                                        type="submit"
+                                        class="btn btn-sm btn-danger"
+                                        title="Eliminar"
+                                    >
+                                        🗑️
+                                    </button>
+
+                                </form>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+                @empty
+
+                    <tr>
+
+                        <td
+                            colspan="8"
+                            class="text-center"
+                        >
+                            No hay animales registrados.
+                        </td>
+
+                    </tr>
+
+                @endforelse
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+    {{-- PAGINACIÓN --}}
+    @if($animales->hasPages())
+
+        <div class="d-flex justify-content-center mt-3">
+
+            {{ $animales->links() }}
+
+        </div>
+
+    @endif
 
 </div>
 

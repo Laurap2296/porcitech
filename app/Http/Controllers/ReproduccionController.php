@@ -23,13 +23,13 @@ class ReproduccionController extends Controller
             ->orderBy('codigo')
             ->get();
 
-        $historial = Reproduccion::with(['hembra','macho','pajilla'])
+        $historial = Reproduccion::with(['hembra', 'macho', 'pajilla'])
             ->orderBy('hembra_id')
             ->orderByDesc('fecha_servicio')
             ->get()
             ->groupBy('hembra_id');
 
-        return view('reproducciones.index', compact('animales','historial'));
+        return view('reproducciones.index', compact('animales', 'historial'));
     }
 
     /*
@@ -40,27 +40,27 @@ class ReproduccionController extends Controller
 
     public function create()
     {
-        $ocupadas = Reproduccion::whereIn('estado', ['Servida','Gestante'])
+        $ocupadas = Reproduccion::whereIn('estado', ['Servida', 'Gestante'])
             ->pluck('hembra_id');
 
-        $hembras = Animal::where('sexo','Hembra')
-            ->where('etapa','Reproductor')
-            ->where('estado','Activo')
-            ->whereNotIn('id',$ocupadas)
+        $hembras = Animal::where('sexo', 'Hembra')
+            ->where('etapa', 'Reproductor')
+            ->where('estado', 'Activo')
+            ->whereNotIn('id', $ocupadas)
             ->orderBy('codigo')
             ->get();
 
-        $machos = Animal::where('sexo','Macho')
-            ->where('etapa','Reproductor')
-            ->where('estado','Activo')
+        $machos = Animal::where('sexo', 'Macho')
+            ->where('etapa', 'Reproductor')
+            ->where('estado', 'Activo')
             ->orderBy('codigo')
             ->get();
 
-        $pajillas = Pajilla::where('estado','Disponible')
+        $pajillas = Pajilla::where('estado', 'Disponible')
             ->orderBy('codigo_pajilla')
             ->get();
 
-        return view('reproducciones.create', compact('hembras','machos','pajillas'));
+        return view('reproducciones.create', compact('hembras', 'machos', 'pajillas'));
     }
 
     /*
@@ -79,12 +79,12 @@ class ReproduccionController extends Controller
         ]);
 
         $abierta = Reproduccion::where('hembra_id', $request->hembra_id)
-            ->whereIn('estado', ['Servida','Gestante'])
+            ->whereIn('estado', ['Servida', 'Gestante'])
             ->exists();
 
         if ($abierta) {
             return back()->withInput()
-                ->with('error','La cerda ya tiene un ciclo activo.');
+                ->with('error', 'La cerda ya tiene un ciclo activo.');
         }
 
         $ultimoServicio = Reproduccion::where('hembra_id', $request->hembra_id)
@@ -92,8 +92,8 @@ class ReproduccionController extends Controller
 
         $numeroServicio = $ultimoServicio ? $ultimoServicio + 1 : 1;
 
-        $revision = date('Y-m-d', strtotime($request->fecha_servicio.' +21 days'));
-        $parto = date('Y-m-d', strtotime($request->fecha_servicio.' +114 days'));
+        $revision = date('Y-m-d', strtotime($request->fecha_servicio . ' +21 days'));
+        $parto = date('Y-m-d', strtotime($request->fecha_servicio . ' +114 days'));
 
         $macho = null;
         $pajilla = null;
@@ -104,7 +104,8 @@ class ReproduccionController extends Controller
             $pajilla = $request->pajilla_id;
 
             if ($pajilla) {
-                Pajilla::where('id',$pajilla)->update(['estado'=>'Usada']);
+                Pajilla::where('id', $pajilla)
+                    ->update(['estado' => 'Usada']);
             }
         }
 
@@ -128,7 +129,7 @@ class ReproduccionController extends Controller
         ]);
 
         return redirect()->route('reproducciones.index')
-            ->with('success','Registro creado correctamente.');
+            ->with('success', 'Registro creado correctamente.');
     }
 
     /*
@@ -139,7 +140,7 @@ class ReproduccionController extends Controller
 
     public function show($id)
     {
-        $reproduccion = Reproduccion::with(['hembra','macho','pajilla'])
+        $reproduccion = Reproduccion::with(['hembra', 'macho', 'pajilla'])
             ->findOrFail($id);
 
         return view('reproducciones.show', compact('reproduccion'));
@@ -155,21 +156,26 @@ class ReproduccionController extends Controller
     {
         $reproduccion = Reproduccion::findOrFail($id);
 
-        $hembras = Animal::where('sexo','Hembra')
-            ->where('etapa','Reproductor')
-            ->where('estado','Activo')
+        $hembras = Animal::where('sexo', 'Hembra')
+            ->where('etapa', 'Reproductor')
+            ->where('estado', 'Activo')
             ->orderBy('codigo')
             ->get();
 
-        $machos = Animal::where('sexo','Macho')
-            ->where('etapa','Reproductor')
-            ->where('estado','Activo')
+        $machos = Animal::where('sexo', 'Macho')
+            ->where('etapa', 'Reproductor')
+            ->where('estado', 'Activo')
             ->orderBy('codigo')
             ->get();
 
         $pajillas = Pajilla::orderBy('codigo_pajilla')->get();
 
-        return view('reproducciones.edit', compact('reproduccion','hembras','machos','pajillas'));
+        return view('reproducciones.edit', compact(
+            'reproduccion',
+            'hembras',
+            'machos',
+            'pajillas'
+        ));
     }
 
     /*
@@ -182,18 +188,51 @@ class ReproduccionController extends Controller
     {
         $reproduccion = Reproduccion::findOrFail($id);
 
+        $request->validate([
+            'hembra_id' => 'required',
+            'tipo_monta' => 'required',
+            'fecha_celo' => 'required|date',
+            'fecha_servicio' => 'required|date'
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | RECALCULAR FECHAS AUTOMÁTICAS
+        |--------------------------------------------------------------------------
+        |
+        | Revisión de celo = 21 días después de la fecha de servicio
+        | Parto probable = 114 días después de la fecha de servicio
+        |
+        */
+
         $fechaRevision = null;
         $fechaPartoProbable = null;
 
         if ($request->repitio_celo != "Si") {
-            $fechaRevision = date('Y-m-d', strtotime($request->fecha_servicio.' +21 days'));
-            $fechaPartoProbable = date('Y-m-d', strtotime($request->fecha_servicio.' +114 days'));
+
+            $fechaRevision = date(
+                'Y-m-d',
+                strtotime($request->fecha_servicio . ' +21 days')
+            );
+
+            $fechaPartoProbable = date(
+                'Y-m-d',
+                strtotime($request->fecha_servicio . ' +114 days')
+            );
         }
+
+        /*
+        |--------------------------------------------------------------------------
+        | DETERMINAR ESTADO
+        |--------------------------------------------------------------------------
+        */
 
         $estado = "Servida";
 
         if ($request->repitio_celo == "Si") {
+
             $estado = "Fallida";
+
             $fechaRevision = null;
             $fechaPartoProbable = null;
         }
@@ -206,16 +245,29 @@ class ReproduccionController extends Controller
             $estado = "Parida";
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | MACHO O PAJILLA
+        |--------------------------------------------------------------------------
+        */
+
         $macho = null;
         $pajilla = null;
 
         if ($request->tipo_monta == "Natural") {
+
             $macho = $request->macho_id;
+
         } else {
+
             $pajilla = $request->pajilla_id;
 
             if ($pajilla) {
-                Pajilla::where('id',$pajilla)->update(['estado'=>'Usada']);
+
+                Pajilla::where('id', $pajilla)
+                    ->update([
+                        'estado' => 'Usada'
+                    ]);
             }
         }
 
@@ -227,8 +279,14 @@ class ReproduccionController extends Controller
 
         if (!empty($request->fecha_parto)) {
 
-            $yaGenerados = Animal::where('madre_id', $reproduccion->hembra_id)
-                ->whereDate('fecha_nacimiento', $request->fecha_parto)
+            $yaGenerados = Animal::where(
+                    'madre_id',
+                    $reproduccion->hembra_id
+                )
+                ->whereDate(
+                    'fecha_nacimiento',
+                    $request->fecha_parto
+                )
                 ->exists();
 
             if (!$yaGenerados) {
@@ -238,32 +296,62 @@ class ReproduccionController extends Controller
                 $granjaId = $reproduccion->hembra->granja_id;
 
                 $razaMadre = $reproduccion->hembra->raza ?? 'Desconocida';
+
                 $razaPadre = $reproduccion->macho->raza ?? 'Desconocido';
 
                 for ($i = 1; $i <= $cantidad; $i++) {
 
                     Animal::create([
-                        'codigo' => 'LC-' . date('Ymd') . '-' . $reproduccion->id . '-' . $i,
-                        'fecha_nacimiento' => $request->fecha_parto,
-                        'fecha_ingreso' => now(),
+                        'codigo' =>
+                            'LC-' .
+                            date('Ymd') .
+                            '-' .
+                            $reproduccion->id .
+                            '-' .
+                            $i,
 
-                        'etapa' => 'Lechon',
-                        'origen' => 'Nacido',
-                        'estado' => 'Activo',
+                        'fecha_nacimiento' =>
+                            $request->fecha_parto,
 
-                        'madre_id' => $reproduccion->hembra_id,
-                        'padre_id' => $reproduccion->macho_id,
-                        'granja_id' => $granjaId,
+                        'fecha_ingreso' =>
+                            $request->fecha_parto,
 
-                        'sexo' => 'Pendiente',
-                        'peso_actual' => 0.5,
-                        'raza' => $razaMadre . ' x ' . $razaPadre,
+                        'etapa' =>
+                            'Lechon',
 
-                        'proveedor' => null,
-                        'codigo_genetico' => null,
+                        'origen' =>
+                            'Nacido',
+
+                        'estado' =>
+                            'Activo',
+
+                        'madre_id' =>
+                            $reproduccion->hembra_id,
+
+                        'padre_id' =>
+                            $reproduccion->macho_id,
+
+                        'granja_id' =>
+                            $granjaId,
+
+                        'sexo' =>
+                            'Pendiente',
+
+                        'peso_actual' =>
+                            0.5,
+
+                        'raza' =>
+                            $razaMadre . ' x ' . $razaPadre,
+
+                        'proveedor' =>
+                            null,
+
+                        'codigo_genetico' =>
+                            null,
 
                         'observaciones' =>
-                            'Generado automáticamente desde parto #' . $reproduccion->id,
+                            'Generado automáticamente desde parto #' .
+                            $reproduccion->id,
                     ]);
                 }
             }
@@ -276,25 +364,54 @@ class ReproduccionController extends Controller
         */
 
         $reproduccion->update([
-            'hembra_id' => $request->hembra_id,
-            'tipo_monta' => $request->tipo_monta,
-            'macho_id' => $macho,
-            'pajilla_id' => $pajilla,
-            'fecha_celo' => $request->fecha_celo,
-            'fecha_servicio' => $request->fecha_servicio,
-            'fecha_revision_celo' => $fechaRevision,
-            'repitio_celo' => $request->repitio_celo,
-            'fecha_parto' => $request->fecha_parto,
-            'fecha_probable_parto' => $fechaPartoProbable,
-            'crias_totales' => $request->crias_totales,
-            'crias_vivas' => $request->crias_vivas,
-            'crias_muertas' => $request->crias_muertas,
-            'estado' => $estado,
-            'observaciones' => $request->observaciones
+            'hembra_id' =>
+                $request->hembra_id,
+
+            'tipo_monta' =>
+                $request->tipo_monta,
+
+            'macho_id' =>
+                $macho,
+
+            'pajilla_id' =>
+                $pajilla,
+
+            'fecha_celo' =>
+                $request->fecha_celo,
+
+            'fecha_servicio' =>
+                $request->fecha_servicio,
+
+            'fecha_revision_celo' =>
+                $fechaRevision,
+
+            'repitio_celo' =>
+                $request->repitio_celo,
+
+            'fecha_parto' =>
+                $request->fecha_parto,
+
+            'fecha_probable_parto' =>
+                $fechaPartoProbable,
+
+            'crias_totales' =>
+                $request->crias_totales,
+
+            'crias_vivas' =>
+                $request->crias_vivas,
+
+            'crias_muertas' =>
+                $request->crias_muertas,
+
+            'estado' =>
+                $estado,
+
+            'observaciones' =>
+                $request->observaciones
         ]);
 
         return redirect()->route('reproducciones.index')
-            ->with('success','Registro actualizado correctamente.');
+            ->with('success', 'Registro actualizado correctamente.');
     }
 
     /*
@@ -308,13 +425,13 @@ class ReproduccionController extends Controller
         $reproduccion = Reproduccion::findOrFail($id);
 
         if ($reproduccion->pajilla_id) {
-            Pajilla::where('id',$reproduccion->pajilla_id)
-                ->update(['estado'=>'Disponible']);
+            Pajilla::where('id', $reproduccion->pajilla_id)
+                ->update(['estado' => 'Disponible']);
         }
 
         $reproduccion->delete();
 
         return redirect()->route('reproducciones.index')
-            ->with('success','Registro eliminado correctamente.');
+            ->with('success', 'Registro eliminado correctamente.');
     }
 }

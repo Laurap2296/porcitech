@@ -70,27 +70,58 @@
 
     <h3>🐖 PorciTech</h3>
 
-    <a href="{{ route('dashboard') }}"><i class="bi bi-house-door"></i> Dashboard</a>
+    <a href="{{ route('dashboard') }}">
+        <i class="bi bi-house-door"></i> Dashboard
+    </a>
 
-    <a href="{{ url('/granjas') }}"><i class="bi bi-building"></i> Granjas</a>
+    <a href="{{ url('/granjas') }}">
+        <i class="bi bi-building"></i> Granjas
+    </a>
 
-    <a href="{{ url('/animales') }}"><i class="bi bi-piggy-bank"></i> Animales</a>
+    <a href="{{ url('/animales') }}">
+        <i class="bi bi-piggy-bank"></i> Animales
+    </a>
 
-    <a href="{{ url('/reproducciones') }}"><i class="bi bi-arrow-repeat"></i> Reproducción</a>
+    <a href="{{ url('/reproducciones') }}">
+        <i class="bi bi-arrow-repeat"></i> Reproducción
+    </a>
 
-    <a href="{{ url('/pajillas') }}"><i class="bi bi-droplet"></i> Pajillas</a>
+    <a href="{{ url('/pajillas') }}">
+        <i class="bi bi-droplet"></i> Pajillas
+    </a>
 
-    <a href="{{ url('/alimentaciones') }}"><i class="bi bi-egg-fried"></i> Alimentación</a>
+    <a href="{{ url('/alimentaciones') }}">
+        <i class="bi bi-egg-fried"></i> Alimentación
+    </a>
 
-    <a href="{{ url('/producciones') }}"><i class="bi bi-box-seam"></i> Producción</a>
+    <a href="{{ url('/producciones') }}">
+        <i class="bi bi-box-seam"></i> Producción
+    </a>
 
-    <a href="{{ url('/sanidades') }}"><i class="bi bi-capsule"></i> Sanidad</a>
+    <a href="{{ url('/sanidades') }}">
+        <i class="bi bi-capsule"></i> Sanidad
+    </a>
 
-    <a href="{{ url('/ventas') }}"><i class="bi bi-cash-coin"></i> Ventas</a>
 
-    <a href="{{ url('/usuarios') }}"><i class="bi bi-people"></i> Usuarios</a>
+    {{-- ========================================================= --}}
+    {{-- SOLO ADMINISTRADOR --}}
+    {{-- ========================================================= --}}
 
-    <a href="{{ url('/reportes') }}"><i class="bi bi-bar-chart"></i> Reportes</a>
+    @if(auth()->user()->rol === 'Administrador')
+
+        <a href="{{ url('/ventas') }}">
+            <i class="bi bi-cash-coin"></i> Ventas
+        </a>
+
+        <a href="{{ url('/usuarios') }}">
+            <i class="bi bi-people"></i> Usuarios
+        </a>
+
+        <a href="{{ url('/reportes') }}">
+            <i class="bi bi-bar-chart"></i> Reportes
+        </a>
+
+    @endif
 
 </div>
 

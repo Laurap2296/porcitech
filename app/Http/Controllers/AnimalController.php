@@ -7,30 +7,51 @@ use App\Models\Granja;
 use App\Models\Racion;
 use App\Models\Reproduccion;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 class AnimalController extends Controller
 {
-    /**
-     * =========================================================
-     * LISTADO DE ANIMALES
-     * =========================================================
-     */
-    public function index()
+    public function index(Request $request)
     {
-        $animales = Animal::with('granja')
-            ->orderBy('codigo')
-            ->get();
+        $codigo = $request->codigo;
+        $sexo = $request->sexo;
+        $etapa = $request->etapa;
+        $origen = $request->origen;
+        $estado = $request->estado;
+        $granja_id = $request->granja_id;
 
-        return view('animales.index', compact('animales'));
+        $animales = Animal::with('granja')
+            ->when($codigo, function ($query) use ($codigo) {
+                $query->where('codigo', 'like', '%' . $codigo . '%');
+            })
+            ->when($sexo, function ($query) use ($sexo) {
+                $query->where('sexo', $sexo);
+            })
+            ->when($etapa, function ($query) use ($etapa) {
+                $query->where('etapa', $etapa);
+            })
+            ->when($origen, function ($query) use ($origen) {
+                $query->where('origen', $origen);
+            })
+            ->when($estado, function ($query) use ($estado) {
+                $query->where('estado', $estado);
+            })
+            ->when($granja_id, function ($query) use ($granja_id) {
+                $query->where('granja_id', $granja_id);
+            })
+            ->orderBy('codigo')
+            ->paginate(10)
+            ->withQueryString();
+
+        $granjas = Granja::orderBy('nombre')->get();
+
+        return view('animales.index', compact(
+            'animales',
+            'granjas'
+        ));
     }
 
-
-    /**
-     * =========================================================
-     * CREAR ANIMAL
-     * =========================================================
-     */
     public function create()
     {
         $granjas = Granja::all();
@@ -54,25 +75,31 @@ class AnimalController extends Controller
         ));
     }
 
-
-    /**
-     * =========================================================
-     * GUARDAR ANIMAL
-     * =========================================================
-     */
     public function store(Request $request)
     {
-        $request->validate([
-            'codigo' => 'required',
-            'raza' => 'required',
-            'sexo' => 'required',
-            'fecha_nacimiento' => 'required|date',
-            'peso_actual' => 'required|numeric|min:0',
-            'etapa' => 'required',
-            'origen' => 'required',
-            'estado' => 'required',
-            'granja_id' => 'required|exists:granjas,id',
-        ]);
+        $request->validate(
+            [
+                'codigo' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    'unique:animales,codigo',
+                ],
+                'raza' => 'required',
+                'sexo' => 'required',
+                'fecha_nacimiento' => 'required|date',
+                'peso_actual' => 'required|numeric|min:0',
+                'etapa' => 'required',
+                'origen' => 'required',
+                'estado' => 'required',
+                'granja_id' => 'required|exists:granjas,id',
+            ],
+            [
+                'codigo.required' => 'El código del animal es obligatorio.',
+                'codigo.unique' => 'Este código de animal ya está registrado. Ingrese un código diferente.',
+                'codigo.max' => 'El código no puede tener más de 50 caracteres.',
+            ]
+        );
 
         Animal::create($request->all());
 
@@ -81,54 +108,29 @@ class AnimalController extends Controller
             ->with('success', 'Animal registrado correctamente');
     }
 
-
-    /**
-     * =========================================================
-     * HISTORIA CLÍNICA Y PRODUCTIVA
-     * =========================================================
-     */
     public function show(Animal $animale)
     {
-        /*
-        |--------------------------------------------------------------------------
-        | CARGAR HISTORIA COMPLETA
-        |--------------------------------------------------------------------------
-        */
-
         $animale->load([
             'granja',
-
             'alimentaciones' => function ($query) {
                 $query->orderBy('fecha', 'desc');
             },
-
             'producciones' => function ($query) {
                 $query->orderBy('fecha_pesaje', 'desc');
             },
-
             'sanidades' => function ($query) {
                 $query->orderBy('fecha', 'desc');
             },
-
             'ventas' => function ($query) {
                 $query->orderBy('fecha_venta', 'desc');
             },
-
             'reproduccionesHembra' => function ($query) {
                 $query->orderBy('fecha_celo', 'desc');
             },
-
             'reproduccionesMacho' => function ($query) {
                 $query->orderBy('fecha_servicio', 'desc');
             },
         ]);
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | MADRE Y PADRE
-        |--------------------------------------------------------------------------
-        */
 
         $madre = null;
         $padre = null;
@@ -141,24 +143,10 @@ class AnimalController extends Controller
             $padre = Animal::find($animale->padre_id);
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | RACIONES
-        |--------------------------------------------------------------------------
-        */
-
         $raciones = Racion::orderBy('etapa')
             ->orderBy('sexo')
             ->orderBy('peso_min')
             ->get();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | REPRODUCCIONES
-        |--------------------------------------------------------------------------
-        */
 
         $reproducciones = Reproduccion::orderByDesc('fecha_servicio')
             ->get()
@@ -167,21 +155,12 @@ class AnimalController extends Controller
                 return $registros->first();
             });
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | ALIMENTACIÓN AUTOMÁTICA
-        |--------------------------------------------------------------------------
-        */
-
         $racionAutomatica = null;
         $cantidadAutomatica = null;
         $condicionReproductiva = null;
         $diasGestacion = null;
 
-
         if ($animale->estado === 'Activo') {
-
             $condicionReproductiva = $this->obtenerCondicionReproductiva(
                 $animale,
                 $reproducciones
@@ -205,32 +184,16 @@ class AnimalController extends Controller
             );
         }
 
-
-        /*
-        |--------------------------------------------------------------------------
-        | CANTIDAD FINAL
-        |--------------------------------------------------------------------------
-        */
-
         $cantidadMostrar = $cantidadAutomatica;
         $alimentacionAjustada = false;
-
 
         if (
             $animale->cantidad_ajustada !== null &&
             $animale->cantidad_ajustada !== ''
         ) {
-
             $cantidadMostrar = $animale->cantidad_ajustada;
             $alimentacionAjustada = true;
         }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | DEVOLVER VISTA
-        |--------------------------------------------------------------------------
-        */
 
         return view('animales.show', compact(
             'animale',
@@ -245,12 +208,6 @@ class AnimalController extends Controller
         ));
     }
 
-
-    /**
-     * =========================================================
-     * EDITAR ANIMAL
-     * =========================================================
-     */
     public function edit(Animal $animale)
     {
         $granjas = Granja::all();
@@ -277,25 +234,32 @@ class AnimalController extends Controller
         ));
     }
 
-
-    /**
-     * =========================================================
-     * ACTUALIZAR ANIMAL
-     * =========================================================
-     */
     public function update(Request $request, Animal $animale)
     {
-        $request->validate([
-            'codigo' => 'required',
-            'raza' => 'required',
-            'sexo' => 'required',
-            'fecha_nacimiento' => 'required|date',
-            'peso_actual' => 'required|numeric|min:0',
-            'etapa' => 'required',
-            'origen' => 'required',
-            'estado' => 'required',
-            'granja_id' => 'required|exists:granjas,id',
-        ]);
+        $request->validate(
+            [
+                'codigo' => [
+                    'required',
+                    'string',
+                    'max:50',
+                    Rule::unique('animales', 'codigo')
+                        ->ignore($animale->id),
+                ],
+                'raza' => 'required',
+                'sexo' => 'required',
+                'fecha_nacimiento' => 'required|date',
+                'peso_actual' => 'required|numeric|min:0',
+                'etapa' => 'required',
+                'origen' => 'required',
+                'estado' => 'required',
+                'granja_id' => 'required|exists:granjas,id',
+            ],
+            [
+                'codigo.required' => 'El código del animal es obligatorio.',
+                'codigo.unique' => 'Este código de animal ya está registrado. Ingrese un código diferente.',
+                'codigo.max' => 'El código no puede tener más de 50 caracteres.',
+            ]
+        );
 
         $animale->update($request->all());
 
@@ -304,12 +268,6 @@ class AnimalController extends Controller
             ->with('success', 'Animal actualizado correctamente');
     }
 
-
-    /**
-     * =========================================================
-     * ELIMINAR ANIMAL
-     * =========================================================
-     */
     public function destroy(Animal $animale)
     {
         $animale->delete();
@@ -319,16 +277,8 @@ class AnimalController extends Controller
             ->with('success', 'Animal eliminado correctamente');
     }
 
-
-    /**
-     * =========================================================
-     * CONDICIÓN REPRODUCTIVA
-     * =========================================================
-     */
-    private function obtenerCondicionReproductiva(
-        $animal,
-        $reproducciones
-    ) {
+    private function obtenerCondicionReproductiva($animal, $reproducciones)
+    {
         if (!$animal) {
             return null;
         }
@@ -381,16 +331,8 @@ class AnimalController extends Controller
         return 'Mantenimiento';
     }
 
-
-    /**
-     * =========================================================
-     * DÍAS DE GESTACIÓN
-     * =========================================================
-     */
-    private function obtenerDiasGestacion(
-        $animal,
-        $reproducciones
-    ) {
+    private function obtenerDiasGestacion($animal, $reproducciones)
+    {
         if (
             !$animal ||
             $animal->sexo !== 'Hembra' ||
@@ -425,17 +367,8 @@ class AnimalController extends Controller
         ) + 1;
     }
 
-
-    /**
-     * =========================================================
-     * BUSCAR RACIÓN AUTOMÁTICA
-     * =========================================================
-     */
-    private function obtenerRacion(
-        $animal,
-        $raciones,
-        $reproducciones
-    ) {
+    private function obtenerRacion($animal, $raciones, $reproducciones)
+    {
         if (!$animal) {
             return null;
         }
@@ -540,17 +473,8 @@ class AnimalController extends Controller
         );
     }
 
-
-    /**
-     * =========================================================
-     * CANTIDAD AUTOMÁTICA
-     * =========================================================
-     */
-    private function obtenerCantidad(
-        $animal,
-        $raciones,
-        $reproducciones
-    ) {
+    private function obtenerCantidad($animal, $raciones, $reproducciones)
+    {
         $racion = $this->obtenerRacion(
             $animal,
             $raciones,

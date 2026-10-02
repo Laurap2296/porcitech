@@ -11,6 +11,7 @@
 @csrf
 
 <div class="mb-3">
+
     <label>Animal</label>
 
     <select name="animal_id" class="form-control" required>
@@ -28,6 +29,7 @@
     </select>
 
 </div>
+
 
 <div class="mb-3">
 
@@ -61,6 +63,7 @@
 
 </div>
 
+
 <div class="mb-3">
 
     <label>Nombre</label>
@@ -73,6 +76,7 @@
         required>
 
 </div>
+
 
 <div class="mb-3">
 
@@ -87,6 +91,7 @@
 
 </div>
 
+
 <div
     class="mb-3"
     id="div_frecuencia"
@@ -100,21 +105,26 @@
 
         <option value="">Seleccione</option>
 
-        <option value="3">
+        <option value="15d">
+            Cada 15 días
+        </option>
+
+        <option value="3m">
             Cada 3 meses
         </option>
 
-        <option value="6">
+        <option value="6m">
             Cada 6 meses
         </option>
 
-        <option value="12">
+        <option value="12m">
             Cada 1 año
         </option>
 
     </select>
 
 </div>
+
 
 <div
     class="mb-3"
@@ -126,9 +136,11 @@
     <input
         type="number"
         id="duracion"
-        class="form-control">
+        class="form-control"
+        min="1">
 
 </div>
+
 
 <div class="mb-3">
 
@@ -138,10 +150,15 @@
         type="date"
         name="proxima_fecha"
         id="proxima_fecha"
-        class="form-control"
-        readonly>
+        class="form-control">
+
+    <small class="text-muted">
+        La fecha se calcula automáticamente según la duración o frecuencia seleccionada,
+        pero puede modificarse manualmente.
+    </small>
 
 </div>
+
 
 <div
     class="mb-3"
@@ -155,6 +172,7 @@
 
 </div>
 
+
 <div class="mb-3">
 
     <label>Observaciones</label>
@@ -165,6 +183,7 @@
 
 </div>
 
+
 <button class="btn btn-success">
 
     Guardar
@@ -174,7 +193,7 @@
 <a href="{{ route('sanidades.index') }}"
 class="btn btn-secondary">
 
-Cancelar
+    Cancelar
 
 </a>
 
@@ -182,105 +201,180 @@ Cancelar
 
 </div>
 
+
 <script>
 
-const tipo=document.getElementById('tipo_registro');
+const tipo = document.getElementById('tipo_registro');
 
-const frecuencia=document.getElementById('div_frecuencia');
+const frecuencia = document.getElementById('div_frecuencia');
 
-const duracion=document.getElementById('div_duracion');
+const duracion = document.getElementById('div_duracion');
 
-const diagnostico=document.getElementById('div_diagnostico');
+const diagnostico = document.getElementById('div_diagnostico');
 
-const fecha=document.getElementById('fecha');
+const fecha = document.getElementById('fecha');
 
-const proxima=document.getElementById('proxima_fecha');
+const proxima = document.getElementById('proxima_fecha');
 
-const dias=document.getElementById('duracion');
+const dias = document.getElementById('duracion');
 
-const meses=document.getElementById('frecuencia');
+const meses = document.getElementById('frecuencia');
 
-const nombre=document.getElementById('nombre');
 
-function actualizarFormulario(){
+function actualizarFormulario() {
 
-frecuencia.style.display='none';
+    frecuencia.style.display = 'none';
 
-duracion.style.display='none';
+    duracion.style.display = 'none';
 
-diagnostico.style.display='none';
+    diagnostico.style.display = 'none';
 
-proxima.value='';
 
-if(tipo.value=='Tratamiento'){
+    if (
+        tipo.value == 'Vacunacion' ||
+        tipo.value == 'Desparasitacion/vitamina'
+    ) {
 
-duracion.style.display='block';
+        frecuencia.style.display = 'block';
 
-diagnostico.style.display='block';
+    }
 
-}
 
-if(tipo.value=='Desparasitacion'){
+    if (
+        tipo.value == 'Tratamiento' ||
+        tipo.value == 'Control'
+    ) {
 
-frecuencia.style.display='block';
+        duracion.style.display = 'block';
 
-}
+        diagnostico.style.display = 'block';
 
-if(tipo.value=='Control'){
-
-diagnostico.style.display='block';
-
-}
-
-if(tipo.value=='Vacunacion'){
-
-if(nombre.value.toUpperCase()=='PPC'){
-
-proxima.value='';
+    }
 
 }
 
-}
+
+function calcularProximaFecha() {
+
+    if (fecha.value == '') {
+        return;
+    }
+
+
+    let f = new Date(fecha.value + 'T00:00:00');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TRATAMIENTO / CONTROL
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        (tipo.value == 'Tratamiento' ||
+         tipo.value == 'Control') &&
+        dias.value != ''
+    ) {
+
+        f.setDate(
+            f.getDate() + parseInt(dias.value)
+        );
+
+        proxima.value =
+            f.toISOString().split('T')[0];
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VACUNACIÓN / DESPARASITACIÓN
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        (tipo.value == 'Vacunacion' ||
+         tipo.value == 'Desparasitacion/vitamina') &&
+        meses.value != ''
+    ) {
+
+        let valor = meses.value;
+
+
+        if (valor == '15d') {
+
+            f.setDate(
+                f.getDate() + 15
+            );
+
+        }
+
+
+        if (valor == '3m') {
+
+            f.setMonth(
+                f.getMonth() + 3
+            );
+
+        }
+
+
+        if (valor == '6m') {
+
+            f.setMonth(
+                f.getMonth() + 6
+            );
+
+        }
+
+
+        if (valor == '12m') {
+
+            f.setFullYear(
+                f.getFullYear() + 1
+            );
+
+        }
+
+
+        proxima.value =
+            f.toISOString().split('T')[0];
+
+    }
 
 }
 
-tipo.addEventListener('change',actualizarFormulario);
 
-nombre.addEventListener('keyup',actualizarFormulario);
+tipo.addEventListener(
+    'change',
+    function() {
 
-dias.addEventListener('keyup',function(){
+        actualizarFormulario();
 
-if(fecha.value=='' || dias.value=='')
+        proxima.value = '';
 
-return;
+    }
+);
 
-let f=new Date(fecha.value);
 
-f.setDate(f.getDate()+parseInt(dias.value));
+dias.addEventListener(
+    'input',
+    calcularProximaFecha
+);
 
-proxima.value=f.toISOString().split('T')[0];
 
-});
+meses.addEventListener(
+    'change',
+    calcularProximaFecha
+);
 
-meses.addEventListener('change',function(){
 
-if(fecha.value=='' || meses.value=='')
+fecha.addEventListener(
+    'change',
+    calcularProximaFecha
+);
 
-return;
-
-let f=new Date(fecha.value);
-
-f.setMonth(f.getMonth()+parseInt(meses.value));
-
-proxima.value=f.toISOString().split('T')[0];
-
-});
-
-fecha.addEventListener('change',function(){
-
-actualizarFormulario();
-
-});
 
 actualizarFormulario();
 

@@ -10,7 +10,6 @@
             Editar Registro Sanitario
         </h2>
 
-        {{-- REGRESAR --}}
         <a href="{{ route('sanidades.index') }}"
            class="btn btn-secondary">
 
@@ -34,6 +33,7 @@
 
 
                 {{-- ANIMAL --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -61,6 +61,7 @@
 
 
                 {{-- TIPO REGISTRO --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -68,6 +69,7 @@
                     </label>
 
                     <select name="tipo_registro"
+                            id="tipo_registro"
                             class="form-control"
                             required>
 
@@ -75,6 +77,13 @@
                             {{ $sanidad->tipo_registro == 'Vacunacion' ? 'selected' : '' }}>
 
                             Vacunación
+
+                        </option>
+
+                        <option value="Desparasitacion/vitamina"
+                            {{ $sanidad->tipo_registro == 'Desparasitacion/vitamina' ? 'selected' : '' }}>
+
+                            Desparasitación/vitamina
 
                         </option>
 
@@ -105,6 +114,7 @@
 
 
                 {{-- NOMBRE --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -121,6 +131,7 @@
 
 
                 {{-- FECHA --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -129,6 +140,7 @@
 
                     <input type="date"
                            name="fecha"
+                           id="fecha"
                            class="form-control"
                            value="{{ $sanidad->fecha }}"
                            required>
@@ -136,7 +148,64 @@
                 </div>
 
 
+                {{-- FRECUENCIA --}}
+
+                <div class="mb-3"
+                     id="div_frecuencia"
+                     style="display:none;">
+
+                    <label class="form-label">
+                        Frecuencia
+                    </label>
+
+                    <select id="frecuencia"
+                            class="form-control">
+
+                        <option value="">
+                            Seleccione
+                        </option>
+
+                        <option value="15d">
+                            Cada 15 días
+                        </option>
+
+                        <option value="3m">
+                            Cada 3 meses
+                        </option>
+
+                        <option value="6m">
+                            Cada 6 meses
+                        </option>
+
+                        <option value="12m">
+                            Cada 1 año
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                {{-- DURACIÓN --}}
+
+                <div class="mb-3"
+                     id="div_duracion"
+                     style="display:none;">
+
+                    <label class="form-label">
+                        Duración (días)
+                    </label>
+
+                    <input type="number"
+                           id="duracion"
+                           class="form-control"
+                           min="1">
+
+                </div>
+
+
                 {{-- PROXIMA FECHA --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -145,13 +214,19 @@
 
                     <input type="date"
                            name="proxima_fecha"
+                           id="proxima_fecha"
                            class="form-control"
                            value="{{ $sanidad->proxima_fecha }}">
+
+                    <small class="text-muted">
+                        Puede modificar manualmente la fecha calculada.
+                    </small>
 
                 </div>
 
 
                 {{-- DIAGNOSTICO --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -166,6 +241,7 @@
 
 
                 {{-- OBSERVACIONES --}}
+
                 <div class="mb-3">
 
                     <label class="form-label">
@@ -180,6 +256,7 @@
 
 
                 {{-- BOTONES --}}
+
                 <div class="d-flex gap-2">
 
                     <button type="submit"
@@ -208,5 +285,180 @@
     </div>
 
 </div>
+
+
+<script>
+
+const tipo = document.getElementById('tipo_registro');
+
+const frecuencia = document.getElementById('div_frecuencia');
+
+const duracion = document.getElementById('div_duracion');
+
+const fecha = document.getElementById('fecha');
+
+const proxima = document.getElementById('proxima_fecha');
+
+const dias = document.getElementById('duracion');
+
+const meses = document.getElementById('frecuencia');
+
+
+function actualizarFormulario() {
+
+    frecuencia.style.display = 'none';
+
+    duracion.style.display = 'none';
+
+
+    if (
+        tipo.value == 'Vacunacion' ||
+        tipo.value == 'Desparasitacion/vitamina' ||
+        tipo.value == 'Desparasitacion'
+    ) {
+
+        frecuencia.style.display = 'block';
+
+    }
+
+
+    if (
+        tipo.value == 'Tratamiento' ||
+        tipo.value == 'Control'
+    ) {
+
+        duracion.style.display = 'block';
+
+    }
+
+}
+
+
+function calcularProximaFecha() {
+
+    if (fecha.value == '') {
+        return;
+    }
+
+
+    let f = new Date(fecha.value + 'T00:00:00');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | TRATAMIENTO / CONTROL
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        (tipo.value == 'Tratamiento' ||
+         tipo.value == 'Control') &&
+        dias.value != ''
+    ) {
+
+        f.setDate(
+            f.getDate() + parseInt(dias.value)
+        );
+
+        proxima.value =
+            f.toISOString().split('T')[0];
+
+        return;
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VACUNACIÓN / DESPARASITACIÓN
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        (
+            tipo.value == 'Vacunacion' ||
+            tipo.value == 'Desparasitacion/vitamina' ||
+            tipo.value == 'Desparasitacion'
+        ) &&
+        meses.value != ''
+    ) {
+
+        let valor = meses.value;
+
+
+        if (valor == '15d') {
+
+            f.setDate(
+                f.getDate() + 15
+            );
+
+        }
+
+
+        if (valor == '3m') {
+
+            f.setMonth(
+                f.getMonth() + 3
+            );
+
+        }
+
+
+        if (valor == '6m') {
+
+            f.setMonth(
+                f.getMonth() + 6
+            );
+
+        }
+
+
+        if (valor == '12m') {
+
+            f.setFullYear(
+                f.getFullYear() + 1
+            );
+
+        }
+
+
+        proxima.value =
+            f.toISOString().split('T')[0];
+
+    }
+
+}
+
+
+tipo.addEventListener(
+    'change',
+    function() {
+
+        actualizarFormulario();
+
+    }
+);
+
+
+dias.addEventListener(
+    'input',
+    calcularProximaFecha
+);
+
+
+meses.addEventListener(
+    'change',
+    calcularProximaFecha
+);
+
+
+fecha.addEventListener(
+    'change',
+    calcularProximaFecha
+);
+
+
+actualizarFormulario();
+
+</script>
 
 @endsection
